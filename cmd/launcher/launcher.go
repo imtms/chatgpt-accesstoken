@@ -172,7 +172,7 @@ func (m *Launcher) loadLocalProxy(ctx context.Context, filename, proPrefix strin
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		// http://hahaha:xixixi@202.182.69.8:17575
+		// http://sssss:sssss@111.111.11.8:18080
 		// 207.170.169.222:12323:14a39d51ccd93:1ce030a7f9
 		val := strings.Split(line, ":")
 		if len(val) != 4 {
