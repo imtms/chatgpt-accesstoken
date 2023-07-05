@@ -122,12 +122,21 @@ func (m *Launcher) run(ctx context.Context, opts Config) error {
 		}
 	}
 
+	// Reserved interface implementation
 	var akStore akt.AccessTokenStore
 	{
 		akStore = core.NewAccessTokenStore()
 	}
 
-	openaiAuthSvc := core.NewOpenaiAuthLogger(m.logger, core.NewOpenaiAuthCache(proxySvc, core.New(), akStore, m.logger))
+	// Reserved interface implementation
+	var strategySvc core.StrategyBalance
+	{
+		strategySvc = &core.RandomStrategy{}
+	}
+
+	openaiAuthSvc := core.NewOpenaiAuthLogger(
+		m.logger,
+		core.NewOpenaiAuthCache(proxySvc, core.New(), akStore, strategySvc, m.logger))
 
 	srv := &http.Server{
 		Addr:    opts.HttpBindAddress,

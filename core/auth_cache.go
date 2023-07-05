@@ -18,7 +18,6 @@ package core
 
 import (
 	"context"
-	"math/rand"
 	"time"
 
 	"github.com/workpieces/log"
@@ -28,10 +27,11 @@ import (
 )
 
 type openaiAuthCache struct {
-	proxySvc akt.ProxyService
-	svc      akt.OpenaiAuthService
-	akStore  akt.AccessTokenStore
-	logger   log.Logger
+	proxySvc    akt.ProxyService
+	svc         akt.OpenaiAuthService
+	akStore     akt.AccessTokenStore
+	strategySvc StrategyBalance
+	logger      log.Logger
 }
 
 func (o openaiAuthCache) All(ctx context.Context, req *akt.OpenaiAuthRequest) (*auth.AuthResult, error) {
@@ -48,14 +48,19 @@ func (o openaiAuthCache) All(ctx context.Context, req *akt.OpenaiAuthRequest) (*
 
 LABEL:
 	if req.Proxy == "" {
+		// 使用非本人IP [代理池IP]
 		list, err := o.proxySvc.List(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		idx := rand.Intn(len(list))
-		req.Proxy = list[idx]
+		ip, err := o.strategySvc.Select(list)
+		if err != nil {
+			return nil, err
+		}
+		req.Proxy = ip
 	}
+
 	resp, err := o.svc.All(ctx, req)
 	if err != nil {
 		return nil, err
@@ -85,14 +90,19 @@ func (o openaiAuthCache) AccessToken(ctx context.Context, req *akt.OpenaiAuthReq
 LABEL:
 
 	if req.Proxy == "" {
+		// 使用非本人IP [代理池IP]
 		list, err := o.proxySvc.List(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		idx := rand.Intn(len(list))
-		req.Proxy = list[idx]
+		ip, err := o.strategySvc.Select(list)
+		if err != nil {
+			return nil, err
+		}
+		req.Proxy = ip
 	}
+
 	resp, err := o.svc.AccessToken(ctx, req)
 	if err != nil {
 		return nil, err
@@ -122,14 +132,19 @@ func (o openaiAuthCache) PUID(ctx context.Context, req *akt.OpenaiAuthRequest) (
 LABEL:
 
 	if req.Proxy == "" {
+		// 使用非本人IP [代理池IP]
 		list, err := o.proxySvc.List(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		idx := rand.Intn(len(list))
-		req.Proxy = list[idx]
+		ip, err := o.strategySvc.Select(list)
+		if err != nil {
+			return nil, err
+		}
+		req.Proxy = ip
 	}
+
 	resp, err := o.svc.PUID(ctx, req)
 	if err != nil {
 		return nil, err
@@ -144,11 +159,12 @@ LABEL:
 	return resp, nil
 }
 
-func NewOpenaiAuthCache(proxySvc akt.ProxyService, svc akt.OpenaiAuthService, akStore akt.AccessTokenStore, logger log.Logger) akt.OpenaiAuthService {
+func NewOpenaiAuthCache(proxySvc akt.ProxyService, svc akt.OpenaiAuthService, akStore akt.AccessTokenStore, strategySvc StrategyBalance, logger log.Logger) akt.OpenaiAuthService {
 	return &openaiAuthCache{
-		proxySvc: proxySvc,
-		svc:      svc,
-		akStore:  akStore,
-		logger:   logger.WithField("auth", "service"),
+		proxySvc:    proxySvc,
+		svc:         svc,
+		akStore:     akStore,
+		strategySvc: strategySvc,
+		logger:      logger.WithField("auth", "service"),
 	}
 }
