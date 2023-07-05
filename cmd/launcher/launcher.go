@@ -117,7 +117,7 @@ func (m *Launcher) run(ctx context.Context, opts Config) error {
 		}
 
 		m.proxySvc = proxySvc
-		if err := m.loadLocalProxy(ctx, opts.ProxyFileName); err != nil {
+		if err := m.loadLocalProxy(ctx, opts.ProxyFileName, opts.ProxyProtocolPrefix); err != nil {
 			return err
 		}
 	}
@@ -162,7 +162,7 @@ func (m *Launcher) run(ctx context.Context, opts Config) error {
 	return nil
 }
 
-func (m *Launcher) loadLocalProxy(ctx context.Context, filename string) error {
+func (m *Launcher) loadLocalProxy(ctx context.Context, filename, proPrefix string) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -184,8 +184,14 @@ func (m *Launcher) loadLocalProxy(ctx context.Context, filename string) error {
 		user := val[2]
 		pwd := val[3]
 
-		m.logger.WithField("proxy", line).Info()
-		if err := m.proxySvc.Add(ctx, fmt.Sprintf("http://%s:%s@%s:%s", user, pwd, ip, port)); err != nil {
+		if proPrefix == "" {
+			proPrefix = "http"
+		}
+
+		m.logger.WithField("prefix", proPrefix).WithField("proxy", line).Info()
+
+		proxyURL := fmt.Sprintf("%s://%s:%s@%s:%s", proPrefix, user, pwd, ip, port)
+		if err := m.proxySvc.Add(ctx, proxyURL); err != nil {
 			return err
 		}
 	}

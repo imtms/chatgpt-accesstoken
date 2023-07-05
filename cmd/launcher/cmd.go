@@ -74,6 +74,8 @@ type Config struct {
 	UseLocalDB bool `envconfig:"USE_LOCAL_DB" default:"true"`
 	// ProxyFileName set the environment proxy filename.
 	ProxyFileName string `envconfig:"PROXY_FILENAME"`
+	// ProxyProtocolPrefix Set proxy protocol prefix. (example: sockets，https，http. default: http)
+	ProxyProtocolPrefix string `envconfig:"PROXY_PROTOCAL_PREFIX" default:"http"`
 	// RedisDB set the environment variables of redis
 	RedisDB redisdb.Config
 }
