@@ -75,7 +75,7 @@ type Config struct {
 	// ProxyFileName set the environment proxy filename.
 	ProxyFileName string `envconfig:"PROXY_FILENAME"`
 	// ProxyProtocolPrefix Set proxy protocol prefix. (example: sockets，https，http. default: http)
-	ProxyProtocolPrefix string `envconfig:"PROXY_PROTOCAL_PREFIX" default:"http"`
+	ProxyProtocolPrefix string `envconfig:"PROXY_PROTOCOL_PREFIX" default:"http"`
 	// RedisDB set the environment variables of redis
 	RedisDB redisdb.Config
 }
