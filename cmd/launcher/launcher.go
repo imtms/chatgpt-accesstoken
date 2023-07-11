@@ -50,6 +50,7 @@ type Launcher struct {
 	httpPort int
 	logger   log.Logger
 	proxySvc akt.ProxyService
+	akStore  akt.AccessTokenStore
 }
 
 // NewLauncher returns a new instance of Launcher with a no-op logger.
@@ -101,31 +102,22 @@ func (m *Launcher) run(ctx context.Context, opts Config) error {
 		WithField("build_date", info.Date).
 		Info("welcome to akt")
 
-	var proxySvc akt.ProxyService
-	{
-		if !opts.UseLocalDB {
-			db := redisdb.New(opts.RedisDB)
-			m.closers = append(m.closers, labeledCloser{
-				label: "Redis Server",
-				closer: func(ctx context.Context) error {
-					return db.Close()
-				},
-			})
-			proxySvc = core.NewProxyService(db)
-		} else {
-			proxySvc = core.NewProxyLocalService()
-		}
-
-		m.proxySvc = proxySvc
-		if err := m.loadLocalProxy(ctx, opts.ProxyFileName, opts.ProxyProtocolPrefix); err != nil {
-			return err
-		}
+	if !opts.UseLocalDB {
+		db := redisdb.New(opts.RedisDB)
+		m.closers = append(m.closers, labeledCloser{
+			label: "Redis Server",
+			closer: func(ctx context.Context) error {
+				return db.Close()
+			},
+		})
+		m.proxySvc = core.NewProxyService(db)
+		m.akStore = core.NewAccessTokenStoreRedis(db)
+	} else {
+		m.proxySvc = core.NewProxyLocalService()
+		m.akStore = core.NewAccessTokenStore()
 	}
-
-	// Reserved interface implementation
-	var akStore akt.AccessTokenStore
-	{
-		akStore = core.NewAccessTokenStore()
+	if err := m.loadLocalProxy(ctx, opts.ProxyFileName, opts.ProxyProtocolPrefix); err != nil {
+		return err
 	}
 
 	// Reserved interface implementation
@@ -136,11 +128,11 @@ func (m *Launcher) run(ctx context.Context, opts Config) error {
 
 	openaiAuthSvc := core.NewOpenaiAuthLogger(
 		m.logger,
-		core.NewOpenaiAuthCache(proxySvc, core.New(), akStore, strategySvc, m.logger))
+		core.NewOpenaiAuthCache(m.proxySvc, core.New(), m.akStore, strategySvc, m.logger))
 
 	srv := &http.Server{
 		Addr:    opts.HttpBindAddress,
-		Handler: mux2.New(openaiAuthSvc, proxySvc).Handler(),
+		Handler: mux2.New(openaiAuthSvc, m.proxySvc).Handler(),
 	}
 
 	m.closers = append(m.closers, labeledCloser{
