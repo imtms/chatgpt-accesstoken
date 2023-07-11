@@ -18,10 +18,13 @@ package core
 
 import (
 	"context"
+	"fmt"
 
 	akt "github.com/chatgpt-accesstoken"
 	"github.com/chatgpt-accesstoken/store/redisdb"
 )
+
+const prefix = "ip:"
 
 type proxyService struct {
 	db *redisdb.Redis
@@ -32,13 +35,29 @@ func NewProxyService(db *redisdb.Redis) akt.ProxyService {
 }
 
 func (s *proxyService) List(ctx context.Context) ([]string, error) {
-	return nil, nil
+	keys := s.db.Keys(prefix + "*")
+
+	if len(keys) == 0 {
+		return nil, fmt.Errorf("redis: cannot find proxy")
+	}
+
+	return keys, nil
 }
 
 func (s *proxyService) Add(ctx context.Context, ip string) error {
+	err := s.db.Set(prefix+ip, "1", 0)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (s *proxyService) Delete(ctx context.Context, ip string) error {
+	err := s.db.Del(prefix + ip)
+	if err != nil {
+		return fmt.Errorf("redis: %s don't exist", ip)
+	}
+
 	return nil
 }
