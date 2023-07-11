@@ -24,7 +24,7 @@ import (
 	"github.com/chatgpt-accesstoken/store/redisdb"
 )
 
-const prefix = "ip:"
+const ipPrefix = "ip:"
 
 type proxyService struct {
 	db *redisdb.Redis
@@ -35,7 +35,7 @@ func NewProxyService(db *redisdb.Redis) akt.ProxyService {
 }
 
 func (s *proxyService) List(ctx context.Context) ([]string, error) {
-	keys := s.db.Keys(prefix + "*")
+	keys := s.db.Keys(ipPrefix + "*")
 
 	if len(keys) == 0 {
 		return nil, fmt.Errorf("redis: cannot find proxy")
@@ -45,7 +45,7 @@ func (s *proxyService) List(ctx context.Context) ([]string, error) {
 }
 
 func (s *proxyService) Add(ctx context.Context, ip string) error {
-	err := s.db.Set(prefix+ip, "1", 0)
+	err := s.db.Set(ipPrefix+ip, "1", 0)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (s *proxyService) Add(ctx context.Context, ip string) error {
 }
 
 func (s *proxyService) Delete(ctx context.Context, ip string) error {
-	err := s.db.Del(prefix + ip)
+	err := s.db.Del(ipPrefix + ip)
 	if err != nil {
 		return fmt.Errorf("redis: %s don't exist", ip)
 	}
