@@ -49,6 +49,12 @@ type ProxyService interface {
 	Delete(ctx context.Context, ip string) error
 }
 
+type FakeopenStore interface {
+	GetURL() string
+	SetURL(url string) error
+	DeleteURL() error
+}
+
 type AuthExpireResult struct {
 	*auth.AuthResult
 	Expires time.Time `json:"expires"`

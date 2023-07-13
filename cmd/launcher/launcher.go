@@ -47,10 +47,11 @@ type Launcher struct {
 	doneChan <-chan struct{}
 	closers  []labeledCloser
 
-	httpPort int
-	logger   log.Logger
-	proxySvc akt.ProxyService
-	akStore  akt.AccessTokenStore
+	httpPort      int
+	logger        log.Logger
+	proxySvc      akt.ProxyService
+	akStore       akt.AccessTokenStore
+	fakeopenStore akt.FakeopenStore
 }
 
 // NewLauncher returns a new instance of Launcher with a no-op logger.
@@ -112,9 +113,11 @@ func (m *Launcher) run(ctx context.Context, opts Config) error {
 		})
 		m.proxySvc = core.NewProxyService(db)
 		m.akStore = core.NewAccessTokenStoreRedis(db)
+		m.fakeopenStore = core.NewFakeopenStoreRedis(db)
 	} else {
 		m.proxySvc = core.NewProxyLocalService()
 		m.akStore = core.NewAccessTokenStore()
+		m.fakeopenStore = core.NewFakeopenStore()
 	}
 	if err := m.loadLocalProxy(ctx, opts.ProxyFileName, opts.ProxyProtocolPrefix); err != nil {
 		return err
@@ -132,7 +135,7 @@ func (m *Launcher) run(ctx context.Context, opts Config) error {
 
 	srv := &http.Server{
 		Addr:    opts.HttpBindAddress,
-		Handler: mux2.New(openaiAuthSvc, m.proxySvc).Handler(),
+		Handler: mux2.New(openaiAuthSvc, m.proxySvc, m.fakeopenStore).Handler(),
 	}
 
 	m.closers = append(m.closers, labeledCloser{

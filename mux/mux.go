@@ -30,14 +30,16 @@ import (
 )
 
 type Server struct {
-	openAuthSvc akt.OpenaiAuthService
-	proxySvc    akt.ProxyService
+	openAuthSvc   akt.OpenaiAuthService
+	proxySvc      akt.ProxyService
+	fakeopenStore akt.FakeopenStore
 }
 
-func New(openAuthSvc akt.OpenaiAuthService, proxySvc akt.ProxyService) *Server {
+func New(openAuthSvc akt.OpenaiAuthService, proxySvc akt.ProxyService, fakeopenStore akt.FakeopenStore) *Server {
 	return &Server{
-		openAuthSvc: openAuthSvc,
-		proxySvc:    proxySvc,
+		openAuthSvc:   openAuthSvc,
+		proxySvc:      proxySvc,
+		fakeopenStore: fakeopenStore,
 	}
 }
 
@@ -157,7 +159,7 @@ func (s Server) handlerGetProxy(ctx *gin.Context) {
 		return
 	}
 
-	render.JSON(ctx.Writer, list, 20)
+	render.JSON(ctx.Writer, list, http.StatusOK)
 }
 
 type proxyRequest struct {
