@@ -16,20 +16,65 @@ limitations under the License.
 
 package mux
 
-import "github.com/gin-gonic/gin"
+import (
+	"errors"
+	"github.com/asaskevich/govalidator"
+	"github.com/chatgpt-accesstoken/render"
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
 
 func (s Server) handlerGetFakeopen(ctx *gin.Context) {
-	// todo 动态切换代理 [同步下]
+	URL := s.fakeopenStore.GetURL()
+	ctx.JSON(200, gin.H{
+		"URL": URL,
+	})
+}
+
+type URLRequest struct {
+	URL string `json:"URL"`
 }
 
 func (s Server) hanlderPostFakeopen(ctx *gin.Context) {
-	// todo 动态切换代理 [同步下]
+	in := new(URLRequest)
+	if err := ctx.BindJSON(in); err != nil {
+		render.BadRequest(ctx.Writer, err)
+		return
+	}
+	if govalidator.IsNull(in.URL) {
+		render.BadRequest(ctx.Writer, errors.New("api: URL can't be empty"))
+		return
+	}
+	if err := s.fakeopenStore.SetURL(in.URL); err != nil {
+		render.InternalError(ctx.Writer, err)
+		return
+	}
+
+	ctx.Writer.WriteHeader(http.StatusNoContent)
 }
 
 func (s Server) handlerDeleteFakeopen(ctx *gin.Context) {
-	// todo 动态切换代理 [同步下]
+	if err := s.fakeopenStore.DeleteURL(); err != nil {
+		render.InternalError(ctx.Writer, err)
+		return
+	}
+	ctx.Writer.WriteHeader(http.StatusNoContent)
 }
 
 func (s Server) hanlderPutFakeopen(ctx *gin.Context) {
-	// todo 动态切换代理 [同步下]
+	in := new(URLRequest)
+	if err := ctx.BindJSON(in); err != nil {
+		render.BadRequest(ctx.Writer, err)
+		return
+	}
+	if govalidator.IsNull(in.URL) {
+		render.BadRequest(ctx.Writer, errors.New("api: URL can't be empty"))
+		return
+	}
+	if err := s.fakeopenStore.SetURL(in.URL); err != nil {
+		render.InternalError(ctx.Writer, err)
+		return
+	}
+
+	ctx.Writer.WriteHeader(http.StatusNoContent)
 }
