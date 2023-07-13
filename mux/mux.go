@@ -60,6 +60,14 @@ func (s Server) Handler() *gin.Engine {
 		pg.POST("/", s.handlerPostProxy)
 		pg.DELETE("/:id", s.handlerDeleteProxy)
 	}
+
+	pfg := r.Group("/fakeopen")
+	{
+		pfg.GET("/", s.handlerGetFakeopen)       // 获取fakeopen保证能切换接口服务
+		pfg.POST("/", s.hanlderPostFakeopen)     // 添加fakeopen功能接口
+		pfg.DELETE("/", s.handlerDeleteFakeopen) // 删除fakeopen功能接口
+		pfg.PUT("/", s.hanlderPutFakeopen)       // 更新fakeopen接口功能
+	}
 	return r
 }
 
