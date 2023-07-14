@@ -19,6 +19,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"github.com/asaskevich/govalidator"
 	"github.com/chatgpt-accesstoken/store/redisdb"
 	"math/rand"
 	"sync"
@@ -72,4 +73,30 @@ func (s *localExpireStrategy) Select(ips []string) (string, error) {
 type redisExpireStrategy struct {
 	db     *redisdb.Redis
 	expire time.Duration
+}
+
+func (r *redisExpireStrategy) Select(ips []string) (string, error) {
+	for _, ip := range ips {
+		key := r.prefix(ip)
+		v := r.db.Get(key)
+		if govalidator.IsNull(v) {
+			if err := r.db.Set(key, "1", r.expire); err != nil {
+				return "", err
+			}
+			return ip, nil
+		}
+	}
+
+	return "", fmt.Errorf("select: no available IP found")
+}
+
+func (r *redisExpireStrategy) prefix(ip string) string {
+	return fmt.Sprintf("openai:accesstoken:strategy:%s:str", ip)
+}
+
+func NewRedisExpireStrategy(db *redisdb.Redis, expire time.Duration) StrategyBalance {
+	return &redisExpireStrategy{
+		db:     db,
+		expire: expire,
+	}
 }
