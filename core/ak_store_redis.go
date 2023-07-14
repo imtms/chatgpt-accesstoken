@@ -22,6 +22,7 @@ import (
 	"fmt"
 	akt "github.com/chatgpt-accesstoken"
 	"github.com/chatgpt-accesstoken/store/redisdb"
+	"strings"
 )
 
 const akPrefix = "ak:"
@@ -54,7 +55,6 @@ func (a *accessTokenStoreRedis) Delete(ctx context.Context, email string) error 
 }
 
 func (a *accessTokenStoreRedis) Get(ctx context.Context, email string) (*akt.AuthExpireResult, error) {
-
 	data := a.db.Get(akPrefix + email)
 	if data == "" {
 		return nil, fmt.Errorf("ak: cannot find sk")
@@ -65,8 +65,40 @@ func (a *accessTokenStoreRedis) Get(ctx context.Context, email string) (*akt.Aut
 	if err != nil {
 		return nil, err
 	}
-
 	return &ak, nil
+}
+
+func (a *accessTokenStoreRedis) List(ctx context.Context) (map[string]*akt.AuthExpireResult, error) {
+	keys, err := a.getAllKeysWithPrefix(akPrefix)
+	if err != nil {
+		return nil, err
+	}
+
+	all := make(map[string]*akt.AuthExpireResult, len(keys))
+	for _, key := range keys {
+		data := a.db.Get(key)
+		if data == "" {
+			return nil, fmt.Errorf("ak: cannot find sk for key: %s", key)
+		}
+
+		var ak akt.AuthExpireResult
+		err := json.Unmarshal([]byte(data), &ak)
+		if err != nil {
+			return nil, err
+		}
+
+		email := strings.TrimPrefix(key, akPrefix)
+		all[email] = &ak
+	}
+	return all, nil
+}
+
+func (a *accessTokenStoreRedis) getAllKeysWithPrefix(prefix string) ([]string, error) {
+	list := a.db.Keys(prefix + "*")
+	if len(list) != 0 {
+		return list, nil
+	}
+	return nil, fmt.Errorf("redis: key list is empty")
 }
 
 func NewAccessTokenStoreRedis(db *redisdb.Redis) akt.AccessTokenStore {

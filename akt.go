@@ -64,4 +64,5 @@ type AccessTokenStore interface {
 	Add(ctx context.Context, email string, ak *AuthExpireResult) error
 	Delete(ctx context.Context, email string) error
 	Get(ctx context.Context, email string) (*AuthExpireResult, error)
+	List(ctx context.Context) (map[string]*AuthExpireResult, error)
 }

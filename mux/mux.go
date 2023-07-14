@@ -32,6 +32,7 @@ type Server struct {
 	openAuthSvc   akt.OpenaiAuthService
 	proxySvc      akt.ProxyService
 	fakeopenStore akt.FakeopenStore
+	akStore       akt.AccessTokenStore
 }
 
 func New(openAuthSvc akt.OpenaiAuthService, proxySvc akt.ProxyService, fakeopenStore akt.FakeopenStore) *Server {
@@ -53,6 +54,12 @@ func (s Server) Handler() *gin.Engine {
 		ag.POST("/", s.handlerPostAccessToken) // support [潘多拉]
 		ag.POST("/puid", s.handlerPostPUID)
 		ag.POST("/all", s.handlerPostAll)
+	}
+
+	tg := r.Group("/token")
+	{
+		tg.GET("/", s.handlerGetToken)
+		tg.DELETE("/", s.handlerDeleteToken)
 	}
 
 	pg := r.Group("/proxy")

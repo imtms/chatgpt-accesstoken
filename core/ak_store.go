@@ -56,6 +56,12 @@ func (a *accessTokenStore) Get(ctx context.Context, email string) (*akt.AuthExpi
 	return v, nil
 }
 
+func (a *accessTokenStore) List(ctx context.Context) (map[string]*akt.AuthExpireResult, error) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	return a.db, nil
+}
+
 func NewAccessTokenStore() akt.AccessTokenStore {
 	return &accessTokenStore{db: make(map[string]*akt.AuthExpireResult)}
 }
