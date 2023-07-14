@@ -50,9 +50,9 @@ type ProxyService interface {
 }
 
 type FakeopenStore interface {
-	GetURL() string
-	SetURL(url string) error
-	DeleteURL() error
+	Get() (string, error)
+	Set(url string) error
+	Delete() error
 }
 
 type AuthExpireResult struct {

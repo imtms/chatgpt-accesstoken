@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+	"github.com/asaskevich/govalidator"
 	akt "github.com/chatgpt-accesstoken"
 	"github.com/chatgpt-accesstoken/store/redisdb"
 )
@@ -15,7 +17,7 @@ func NewFakeopenStoreRedis(db *redisdb.Redis) akt.FakeopenStore {
 	return &FakeopenStoreRedis{db: db}
 }
 
-func (db *FakeopenStoreRedis) SetURL(url string) error {
+func (db *FakeopenStoreRedis) Set(url string) error {
 	err := db.db.Set(UrlKey, url, 0)
 	if err != nil {
 		return err
@@ -23,12 +25,15 @@ func (db *FakeopenStoreRedis) SetURL(url string) error {
 	return nil
 }
 
-func (db *FakeopenStoreRedis) GetURL() string {
+func (db *FakeopenStoreRedis) Get() (string, error) {
 	data := db.db.Get(UrlKey)
-	return data
+	if govalidator.IsNull(data) {
+		return "", fmt.Errorf("fake: url is empty")
+	}
+	return data, nil
 }
 
-func (db *FakeopenStoreRedis) DeleteURL() error {
+func (db *FakeopenStoreRedis) Delete() error {
 	err := db.db.Del(UrlKey)
 	if err != nil {
 		return err

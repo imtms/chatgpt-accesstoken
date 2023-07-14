@@ -25,7 +25,11 @@ import (
 )
 
 func (s Server) handlerGetFakeopen(ctx *gin.Context) {
-	URL := s.fakeopenStore.GetURL()
+	URL, err := s.fakeopenStore.Get()
+	if err != nil {
+		render.InternalError(ctx.Writer, err)
+		return
+	}
 	ctx.JSON(200, gin.H{
 		"URL": URL,
 	})
@@ -45,7 +49,7 @@ func (s Server) hanlderPostFakeopen(ctx *gin.Context) {
 		render.BadRequest(ctx.Writer, errors.New("api: URL can't be empty"))
 		return
 	}
-	if err := s.fakeopenStore.SetURL(in.URL); err != nil {
+	if err := s.fakeopenStore.Set(in.URL); err != nil {
 		render.InternalError(ctx.Writer, err)
 		return
 	}
@@ -54,7 +58,7 @@ func (s Server) hanlderPostFakeopen(ctx *gin.Context) {
 }
 
 func (s Server) handlerDeleteFakeopen(ctx *gin.Context) {
-	if err := s.fakeopenStore.DeleteURL(); err != nil {
+	if err := s.fakeopenStore.Delete(); err != nil {
 		render.InternalError(ctx.Writer, err)
 		return
 	}
@@ -71,7 +75,7 @@ func (s Server) hanlderPutFakeopen(ctx *gin.Context) {
 		render.BadRequest(ctx.Writer, errors.New("api: URL can't be empty"))
 		return
 	}
-	if err := s.fakeopenStore.SetURL(in.URL); err != nil {
+	if err := s.fakeopenStore.Set(in.URL); err != nil {
 		render.InternalError(ctx.Writer, err)
 		return
 	}
