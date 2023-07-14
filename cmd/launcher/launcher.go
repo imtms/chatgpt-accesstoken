@@ -49,6 +49,7 @@ type Launcher struct {
 
 	httpPort int
 	logger   log.Logger
+	proxySvc akt.ProxyService
 }
 
 // NewLauncher returns a new instance of Launcher with a no-op logger.
@@ -131,6 +132,8 @@ func (m *Launcher) run(ctx context.Context, opts Config) error {
 			strategySvc = core.NewLocalExpireStrategy(opts.ExpireTime)
 		}
 	}
+
+	m.proxySvc = proxySvc
 
 	m.logger.
 		WithField("useLocal", opts.UseLocalDB).
