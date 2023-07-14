@@ -100,6 +100,7 @@ func (c Config) Validate() error {
 				return err
 			}
 		}
+		return nil
 	}
 
 	if c.Strategy == "" {
