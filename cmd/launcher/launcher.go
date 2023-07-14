@@ -108,7 +108,9 @@ func (m *Launcher) run(ctx context.Context, opts Config) error {
 		strategySvc      core.StrategyBalance
 	)
 
-	strategySvc = &core.RandomStrategy{}
+	if opts.Strategy == akt.Random {
+		strategySvc = &core.RandomStrategy{}
+	}
 
 	if !opts.UseLocalDB {
 		db := redisdb.New(opts.RedisDB)
@@ -122,14 +124,19 @@ func (m *Launcher) run(ctx context.Context, opts Config) error {
 			proxySvc = core.NewProxyService(db)
 			accessTokenStore = core.NewAccessTokenStoreRedis(db)
 			fakeopenStore = core.NewFakeopenStoreRedis(db)
-			strategySvc = core.NewRedisExpireStrategy(db, opts.ExpireTime)
+
+			if strategySvc == nil {
+				strategySvc = core.NewRedisExpireStrategy(db, opts.ExpireTime)
+			}
 		}
 	} else {
 		{
 			proxySvc = core.NewProxyLocalService()
 			accessTokenStore = core.NewAccessTokenStore()
 			fakeopenStore = core.NewFakeopenStore()
-			strategySvc = core.NewLocalExpireStrategy(opts.ExpireTime)
+			if strategySvc == nil {
+				strategySvc = core.NewLocalExpireStrategy(opts.ExpireTime)
+			}
 		}
 	}
 
