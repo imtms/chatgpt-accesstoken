@@ -66,3 +66,10 @@ type AccessTokenStore interface {
 	Get(ctx context.Context, email string) (*AuthExpireResult, error)
 	List(ctx context.Context) (map[string]*AuthExpireResult, error)
 }
+
+type StrategyType string
+
+const (
+	Random StrategyType = "random"
+	Expire StrategyType = "expire"
+)

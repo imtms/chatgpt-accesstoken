@@ -18,6 +18,7 @@ package launcher
 
 import (
 	"context"
+	akt "github.com/chatgpt-accesstoken"
 	"os"
 	"time"
 
@@ -76,6 +77,10 @@ type Config struct {
 	ProxyFileName string `envconfig:"PROXY_FILENAME"`
 	// ProxyProtocolPrefix Set proxy protocol prefix. (example: sockets，https，http. default: http)
 	ProxyProtocolPrefix string `envconfig:"PROXY_PROTOCOL_PREFIX" default:"http"`
+	// ExpireTime ip has expire time
+	ExpireTime time.Duration `envconfig:"EXPIRE_TIME" default:"15s"`
+	// Strategy  select balanced strategy. [random,expire]
+	Strategy akt.StrategyType `envconfig:"SELECT_STRATEGY" default:"random"`
 	// RedisDB set the environment variables of redis
 	RedisDB redisdb.Config
 }
@@ -95,7 +100,11 @@ func (c Config) Validate() error {
 				return err
 			}
 		}
-		return nil
 	}
+
+	if c.Strategy == "" {
+		c.Strategy = akt.Random
+	}
+
 	return c.RedisDB.Validate()
 }

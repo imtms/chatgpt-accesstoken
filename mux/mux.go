@@ -35,11 +35,12 @@ type Server struct {
 	akStore       akt.AccessTokenStore
 }
 
-func New(openAuthSvc akt.OpenaiAuthService, proxySvc akt.ProxyService, fakeopenStore akt.FakeopenStore) *Server {
+func New(openAuthSvc akt.OpenaiAuthService, proxySvc akt.ProxyService, fakeopenStore akt.FakeopenStore, akStore akt.AccessTokenStore) *Server {
 	return &Server{
 		openAuthSvc:   openAuthSvc,
 		proxySvc:      proxySvc,
 		fakeopenStore: fakeopenStore,
+		akStore:       akStore,
 	}
 }
 

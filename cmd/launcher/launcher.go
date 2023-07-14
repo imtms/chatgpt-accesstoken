@@ -47,11 +47,8 @@ type Launcher struct {
 	doneChan <-chan struct{}
 	closers  []labeledCloser
 
-	httpPort      int
-	logger        log.Logger
-	proxySvc      akt.ProxyService
-	akStore       akt.AccessTokenStore
-	fakeopenStore akt.FakeopenStore
+	httpPort int
+	logger   log.Logger
 }
 
 // NewLauncher returns a new instance of Launcher with a no-op logger.
@@ -103,6 +100,15 @@ func (m *Launcher) run(ctx context.Context, opts Config) error {
 		WithField("build_date", info.Date).
 		Info("welcome to akt")
 
+	var (
+		proxySvc         akt.ProxyService
+		accessTokenStore akt.AccessTokenStore
+		fakeopenStore    akt.FakeopenStore
+		strategySvc      core.StrategyBalance
+	)
+
+	strategySvc = &core.RandomStrategy{}
+
 	if !opts.UseLocalDB {
 		db := redisdb.New(opts.RedisDB)
 		m.closers = append(m.closers, labeledCloser{
@@ -111,31 +117,43 @@ func (m *Launcher) run(ctx context.Context, opts Config) error {
 				return db.Close()
 			},
 		})
-		m.proxySvc = core.NewProxyService(db)
-		m.akStore = core.NewAccessTokenStoreRedis(db)
-		m.fakeopenStore = core.NewFakeopenStoreRedis(db)
+		{
+			proxySvc = core.NewProxyService(db)
+			accessTokenStore = core.NewAccessTokenStoreRedis(db)
+			fakeopenStore = core.NewFakeopenStoreRedis(db)
+			strategySvc = core.NewRedisExpireStrategy(db, opts.ExpireTime)
+		}
 	} else {
-		m.proxySvc = core.NewProxyLocalService()
-		m.akStore = core.NewAccessTokenStore()
-		m.fakeopenStore = core.NewFakeopenStore()
+		{
+			proxySvc = core.NewProxyLocalService()
+			accessTokenStore = core.NewAccessTokenStore()
+			fakeopenStore = core.NewFakeopenStore()
+			strategySvc = core.NewLocalExpireStrategy(opts.ExpireTime)
+		}
 	}
+
+	m.logger.
+		WithField("useLocal", opts.UseLocalDB).
+		WithField("strategy", opts.Strategy).
+		Info()
+
 	if err := m.loadLocalProxy(ctx, opts.ProxyFileName, opts.ProxyProtocolPrefix); err != nil {
 		return err
 	}
 
-	// Reserved interface implementation
-	var strategySvc core.StrategyBalance
-	{
-		strategySvc = &core.RandomStrategy{}
-	}
-
 	openaiAuthSvc := core.NewOpenaiAuthLogger(
 		m.logger,
-		core.NewOpenaiAuthCache(m.proxySvc, core.New(), m.akStore, strategySvc, m.logger))
+		core.NewOpenaiAuthCache(
+			proxySvc,
+			core.New(),
+			accessTokenStore,
+			strategySvc,
+			m.logger,
+		))
 
 	srv := &http.Server{
 		Addr:    opts.HttpBindAddress,
-		Handler: mux2.New(openaiAuthSvc, m.proxySvc, m.fakeopenStore).Handler(),
+		Handler: mux2.New(openaiAuthSvc, proxySvc, fakeopenStore, accessTokenStore).Handler(),
 	}
 
 	m.closers = append(m.closers, labeledCloser{
