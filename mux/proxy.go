@@ -24,34 +24,33 @@ import (
 	"net/http"
 )
 
-func (s Server) handlerGetFakeopen(ctx *gin.Context) {
-	URL, err := s.fakeopenStore.Get()
+func (s Server) handlerGetProxy(ctx *gin.Context) {
+	list, err := s.proxySvc.List(ctx)
 	if err != nil {
 		render.InternalError(ctx.Writer, err)
 		return
 	}
-	ctx.JSON(200, struct {
-		URL string `json:"url"`
-	}{
-		URL: URL,
-	})
+
+	render.JSON(ctx.Writer, list, http.StatusOK)
 }
 
-type URLRequest struct {
-	URL string `json:"URL"`
+type proxyRequest struct {
+	Proxy string `json:"proxy"`
 }
 
-func (s Server) hanlderPostFakeopen(ctx *gin.Context) {
-	in := new(URLRequest)
+func (s Server) handlerPostProxy(ctx *gin.Context) {
+	in := new(proxyRequest)
 	if err := ctx.BindJSON(in); err != nil {
 		render.BadRequest(ctx.Writer, err)
 		return
 	}
-	if govalidator.IsNull(in.URL) {
-		render.BadRequest(ctx.Writer, errors.New("api: URL can't be empty"))
+
+	if govalidator.IsNull(in.Proxy) {
+		render.BadRequest(ctx.Writer, errors.New("api: cannot find proxy"))
 		return
 	}
-	if err := s.fakeopenStore.Set(in.URL); err != nil {
+
+	if err := s.proxySvc.Add(ctx, in.Proxy); err != nil {
 		render.InternalError(ctx.Writer, err)
 		return
 	}
@@ -59,28 +58,16 @@ func (s Server) hanlderPostFakeopen(ctx *gin.Context) {
 	ctx.Writer.WriteHeader(http.StatusNoContent)
 }
 
-func (s Server) handlerDeleteFakeopen(ctx *gin.Context) {
-	if err := s.fakeopenStore.Delete(); err != nil {
-		render.InternalError(ctx.Writer, err)
-		return
-	}
-	ctx.Writer.WriteHeader(http.StatusNoContent)
-}
-
-func (s Server) hanlderPutFakeopen(ctx *gin.Context) {
-	in := new(URLRequest)
-	if err := ctx.BindJSON(in); err != nil {
-		render.BadRequest(ctx.Writer, err)
-		return
-	}
-	if govalidator.IsNull(in.URL) {
-		render.BadRequest(ctx.Writer, errors.New("api: URL can't be empty"))
-		return
-	}
-	if err := s.fakeopenStore.Set(in.URL); err != nil {
-		render.InternalError(ctx.Writer, err)
+func (s Server) handlerDeleteProxy(ctx *gin.Context) {
+	ip := ctx.Param("ip")
+	if govalidator.IsNull(ip) {
+		render.BadRequest(ctx.Writer, errors.New("api: cannot find ip"))
 		return
 	}
 
+	if err := s.proxySvc.Delete(ctx, ip); err != nil {
+		render.InternalError(ctx.Writer, err)
+		return
+	}
 	ctx.Writer.WriteHeader(http.StatusNoContent)
 }

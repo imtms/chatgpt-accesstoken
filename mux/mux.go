@@ -17,7 +17,6 @@ limitations under the License.
 package mux
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -65,10 +64,10 @@ func (s Server) Handler() *gin.Engine {
 
 	pfg := r.Group("/fakeopen")
 	{
-		pfg.GET("/", s.handlerGetFakeopen)       // 获取fakeopen保证能切换接口服务
-		pfg.POST("/", s.hanlderPostFakeopen)     // 添加fakeopen功能接口
-		pfg.DELETE("/", s.handlerDeleteFakeopen) // 删除fakeopen功能接口
-		pfg.PUT("/", s.hanlderPutFakeopen)       // 更新fakeopen接口功能
+		pfg.GET("/", s.handlerGetFakeopen)
+		pfg.POST("/", s.hanlderPostFakeopen)
+		pfg.DELETE("/", s.handlerDeleteFakeopen)
+		pfg.PUT("/", s.hanlderPutFakeopen)
 	}
 	return r
 }
@@ -150,61 +149,4 @@ func (s Server) handlerPostAll(ctx *gin.Context) {
 		return
 	}
 	render.JSON(ctx.Writer, res, http.StatusOK)
-}
-
-func (s Server) handlerGetProxy(ctx *gin.Context) {
-	list, err := s.proxySvc.List(ctx)
-	if err != nil {
-		render.InternalError(ctx.Writer, err)
-		return
-	}
-
-	render.JSON(ctx.Writer, list, http.StatusOK)
-}
-
-type proxyRequest struct {
-	Proxy string `json:"proxy"`
-}
-
-func (s Server) handlerPostProxy(ctx *gin.Context) {
-	in := new(proxyRequest)
-	if err := ctx.BindJSON(in); err != nil {
-		render.BadRequest(ctx.Writer, err)
-		return
-	}
-
-	if govalidator.IsNull(in.Proxy) {
-		render.BadRequest(ctx.Writer, errors.New("api: cannot find proxy"))
-		return
-	}
-
-	if err := s.proxySvc.Add(ctx, in.Proxy); err != nil {
-		render.InternalError(ctx.Writer, err)
-		return
-	}
-
-	ctx.Writer.WriteHeader(http.StatusNoContent)
-}
-
-func (s Server) handlerDeleteProxy(ctx *gin.Context) {
-	ip := ctx.Param("ip")
-	if govalidator.IsNull(ip) {
-		render.BadRequest(ctx.Writer, errors.New("api: cannot find ip"))
-		return
-	}
-
-	if err := s.proxySvc.Delete(ctx, ip); err != nil {
-		render.InternalError(ctx.Writer, err)
-		return
-	}
-	ctx.Writer.WriteHeader(http.StatusNoContent)
-}
-
-// JSON writes the json-encoded error message to the response
-// with a 400 bad request status code.
-func JSON(w http.ResponseWriter, v interface{}, status int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	enc := json.NewEncoder(w)
-	enc.Encode(v)
 }
