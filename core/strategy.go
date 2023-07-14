@@ -18,7 +18,11 @@ package core
 
 import (
 	"errors"
+	"fmt"
+	"github.com/chatgpt-accesstoken/store/redisdb"
 	"math/rand"
+	"sync"
+	"time"
 )
 
 type StrategyBalance interface {
@@ -36,5 +40,36 @@ func (s *RandomStrategy) Select(ips []string) (string, error) {
 	return ips[rand.Intn(len(ips))], nil
 }
 
-type expireStrategy struct {
+type localExpireStrategy struct {
+	proxysMap map[string]int64
+	expire    time.Duration // 5秒或10秒
+	lock      sync.RWMutex
+}
+
+func NewLocalExpireStrategy(expire time.Duration) StrategyBalance {
+	return &localExpireStrategy{
+		proxysMap: make(map[string]int64),
+		expire:    expire,
+	}
+}
+
+func (s *localExpireStrategy) Select(ips []string) (string, error) {
+	currentTime := time.Now().Unix()
+
+	for _, ip := range ips {
+		s.lock.Lock()
+		val, ok := s.proxysMap[ip]
+		if !ok || currentTime > val+int64(s.expire.Seconds()) {
+			s.proxysMap[ip] = currentTime
+			s.lock.Unlock()
+			return ip, nil
+		}
+		s.lock.Unlock()
+	}
+	return "", fmt.Errorf("select: no available IP found")
+}
+
+type redisExpireStrategy struct {
+	db     *redisdb.Redis
+	expire time.Duration
 }
