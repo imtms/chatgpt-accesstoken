@@ -3,7 +3,7 @@ module github.com/chatgpt-accesstoken
 go 1.20
 
 require (
-	github.com/acheong08/OpenAIAuth v0.0.0-20230625142757-7b01ccd04f63
+	github.com/acheong08/OpenAIAuth v0.0.0-20230712092321-5d5759ef2a81
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-redis/redis/v8 v8.11.5
