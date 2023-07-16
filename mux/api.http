@@ -7,6 +7,27 @@ POST {{URL}}/auth
 Content-Type: application/json
 
 {
-  "email": "nterfaiscubrappmun@mail.com",
-  "password": "FmwwZc0WPXWsXs"
+  "email": "lerowortooduc@mail.com",
+  "password": "ulzNlSXCWL"
 }
+
+### 获取AccessToken
+POST http://127.0.0.1:8080/auth
+Content-Type: application/json
+
+{
+  "email": "lerowortooduc@mail.com",
+  "password": "ulzNlSXCWL"
+}
+
+### python获取accesstoken
+POST http://127.0.0.1:5000/api/auth
+Content-Type: application/json
+
+{
+  "email": "lerowortooduc@mail.com",
+  "password": "ulzNlSXCWL",
+  "proxy": "http://hahaha:xixixi@149.46.193.104:57541"
+}
+
+

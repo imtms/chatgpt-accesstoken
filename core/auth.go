@@ -17,8 +17,15 @@ limitations under the License.
 package core
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/asaskevich/govalidator"
+	"github.com/tidwall/gjson"
+	"io/ioutil"
+	systemhttp "net/http"
 
 	"github.com/acheong08/OpenAIAuth/auth"
 	akt "github.com/chatgpt-accesstoken"
@@ -44,12 +51,54 @@ func (s *openaiAuthService) All(ctx context.Context, req *akt.OpenaiAuthRequest)
 }
 
 func (s *openaiAuthService) AccessToken(ctx context.Context, req *akt.OpenaiAuthRequest) (*auth.AuthResult, error) {
-	authenticator := auth.NewAuthenticator(req.Email, req.Password, req.Proxy)
-	if err := authenticator.Begin(); err != nil {
-		return nil, OError{Err: err}
+	payloadBytes, err := json.Marshal(struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+		Proxy    string `json:"proxy"`
+	}{
+		Email:    req.Email,
+		Password: req.Password,
+		Proxy:    req.Proxy,
+	})
+
+	body := bytes.NewReader(payloadBytes)
+
+	kitreq, err := systemhttp.NewRequest("POST", "http://149.28.231.64:5000/api/auth", body)
+	if err != nil {
+		return nil, err
 	}
 
+	kitreq.Header.Set("Content-Type", "application/json")
+	resp, err := systemhttp.DefaultClient.Do(kitreq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	responseData, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("%s", string(responseData))
+	}
+
+	token := gjson.Get(string(responseData), "default").String()
+	if govalidator.IsNull(token) {
+		return nil, fmt.Errorf("token is empty")
+	}
+
+	authenticator := auth.NewAuthenticator(req.Email, req.Password, req.Proxy)
+	authenticator.AuthResult.AccessToken = token
 	return &authenticator.AuthResult, nil
+
+	//authenticator := auth.NewAuthenticator(req.Email, req.Password, req.Proxy)
+	//if err := authenticator.Begin(); err != nil {
+	//	return nil, OError{Err: err}
+	//}
+	//
+	//return &authenticator.AuthResult, nil
 }
 
 func (s *openaiAuthService) PUID(ctx context.Context, req *akt.OpenaiAuthRequest) (*auth.AuthResult, error) {
