@@ -257,4 +257,11 @@ if __name__ == '__main__':
 ##  docker run -itd -p 5000:5000 askaigo/pyauth:v1.0.0
 
 
+# curl -X POST http://149.28.231.64:8092/auth \
+#      -H "Content-Type: application/json" \
+#      -d '{
+#            "email": "lerowortooduc@mail.com",
+#            "password": "ulzNlSXCWL",
+#            "proxy": "http://hahaha:xixixi@149.46.193.104:57541"
+#          }'
 
